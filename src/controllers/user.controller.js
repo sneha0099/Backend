@@ -15,6 +15,8 @@ const generateAccessAndRefreshTokens = async(userId)=>{
 
         return{acccessToken , refershToken}
     } catch (error) {
+        //console.log(error);
+        
         throw new ApiError(500,"something went wrong while generating refresh and access token")
     }
 }
@@ -93,37 +95,89 @@ const registerUser = asyncHandler(async(req , res)=>{
         )
 })
 
-const loginUser = async(async (req , res)=>{
-    //req body -> data
+// const loginUser = async(async (req , res)=>{
+//     //req body -> data
+//     //username or email
+//     //find the user
+//     //password check
+//     //access and refresh token
+//     //send cookie
+
+//     const {email , username , password} = req.body
+
+//     if (!username && !email) {
+//         throw new ApiError(400, "username or email is required")
+//     }
+
+//     const user = await User.findOne({
+//         $or: [{username},{email}]
+//     })
+
+//     if (!user) {
+//         throw new ApiError(404, "User does not exist")
+//     }
+
+//     const isPasswordvalid = await user.isPasswordCorrect(password)
+
+//     if (!isPasswordvalid) { 
+//         throw new ApiError(401 , "Invalid user credentials")
+//     }
+
+//     const {acccessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
+
+//     const loggedInUser = User.findById(user._id).select("-password -refreshToken")
+
+//     const options = {
+//         httpOnly : true,
+//         secure : true
+//     }
+
+//     return res
+//     .status(200)
+//     .cookie("accessToken", acccessToken , options)
+//     .cookie("refreshToken", refreshToken , options)
+//     .json(
+//         new ApiResponse(
+//             200,{
+//                 user: loggedInUser , acccessToken , refreshToken
+//             },
+//             "User logged In Successsfully"
+//         )
+//     )
+// })
+
+const loginUser = asyncHandler(async(req,res)=>{
+    // req body -> data
     //username or email
     //find the user
     //password check
     //access and refresh token
     //send cookie
 
-    const {email , username , password} = req.body
+    const {email, username, password} = req.body
+    console.log(username)
 
-    if (!username || !email) {
-        throw new ApiError(400, "username or email is required")
+    if (!username && !email) {
+        throw new ApiError(400 , "username or email is required")
     }
 
     const user = await User.findOne({
-        $: [{username},{email}]
+        $or : [{username} , {email}]
     })
 
     if (!user) {
-        throw new ApiError(404, "User does not exist")
+        throw new ApiError(404, "user not found")
     }
 
     const isPasswordvalid = await user.isPasswordCorrect(password)
 
-    if (!isPasswordvalid) { 
+    if (!isPasswordvalid) {
         throw new ApiError(401 , "Invalid user credentials")
     }
 
-    const {acccessToken, refershToken} = await generateAccessAndRefreshTokens(user._id)
+    const {accessToken , refreshToken} = await generateAccessAndRefreshTokens(user._id)
 
-    const loggedInUser = User.findById(user._id).select("-password -refreshToken")
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     const options = {
         httpOnly : true,
@@ -132,14 +186,17 @@ const loginUser = async(async (req , res)=>{
 
     return res
     .status(200)
-    .cookie("accessToken", acccessToken , options)
-    .cookie("refreshToken", refershToken , options)
+    .cookie("accessToken" , accessToken , options)
+    .cookie("refreshToken" , refreshToken , options)
     .json(
         new ApiResponse(
-            200,{
-                user: loggedInUser , acccessToken , refershToken
+            200,
+            {
+            user: loggedInUser,
+            accessToken,
+            refreshToken
             },
-            "User logged In Successsfully"
+            "user logged In successfully"
         )
     )
 })
